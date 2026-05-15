@@ -10,10 +10,12 @@ const pluginName = "obsidian-sna";
 
 const vaultPath = process.env.OBSIDIAN_VAULT;
 
-const outdir =
-  !prod && vaultPath
-    ? path.join(vaultPath, ".obsidian/plugins", pluginName)
-    : "dist";
+const outdir = prod
+  ? 'dist'
+  : path.join(
+      vaultPath,
+      '.obsidian/plugins/obsidian-sna'
+    );
 
 const banner = `
 /*
