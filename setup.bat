@@ -54,17 +54,17 @@ echo [OK] Plugin built successfully
 echo.
 
 REM Check if files were created
-if not exist "main.js" (
+if not exist "dist\main.js" (
     echo Error: main.js not found
     pause
     exit /b 1
 )
-if not exist "manifest.json" (
+if not exist "dist\manifest.json" (
     echo Error: manifest.json not found
     pause
     exit /b 1
 )
-if not exist "styles.css" (
+if not exist "dist\styles.css" (
     echo Error: styles.css not found
     pause
     exit /b 1
@@ -109,7 +109,7 @@ if not exist "%PLUGIN_DIR%" (
 
 echo.
 echo Copying plugin files...
-copy /Y main.js "%PLUGIN_DIR%\" >nul
+copy /Y dist\main.js "%PLUGIN_DIR%\" >nul
 if errorlevel 1 (
     echo Error: Failed to copy main.js
     pause
@@ -117,7 +117,7 @@ if errorlevel 1 (
 )
 echo [OK] Copied main.js
 
-copy /Y manifest.json "%PLUGIN_DIR%\" >nul
+copy /Y dist\manifest.json "%PLUGIN_DIR%\" >nul
 if errorlevel 1 (
     echo Error: Failed to copy manifest.json
     pause
@@ -125,7 +125,7 @@ if errorlevel 1 (
 )
 echo [OK] Copied manifest.json
 
-copy /Y styles.css "%PLUGIN_DIR%\" >nul
+copy /Y dist\styles.css "%PLUGIN_DIR%\" >nul
 if errorlevel 1 (
     echo Error: Failed to copy styles.css
     pause
