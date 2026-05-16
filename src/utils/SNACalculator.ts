@@ -47,6 +47,11 @@ export class SNACalculator {
 					edge.source,
 					(centrality.get(edge.source) || 0) + edge.weight
 				);
+				// Also count in-degree
+				centrality.set(
+					edge.target,
+					(centrality.get(edge.target) || 0) + edge.weight
+				);
 			} else {
 				// For undirected, count both directions
 				centrality.set(
@@ -60,13 +65,11 @@ export class SNACalculator {
 			}
 		});
 
-		// Normalize
-		const maxDegree = Math.max(...Array.from(centrality.values()));
-		if (maxDegree > 0) {
-			centrality.forEach((value, key) => {
-				centrality.set(key, value / maxDegree);
-			});
-		}
+		// Normalize (avoid division by zero)
+		const maxDegree = Math.max(...Array.from(centrality.values()), 1);
+		centrality.forEach((value, key) => {
+			centrality.set(key, value / maxDegree);
+		});
 
 		return centrality;
 	}
@@ -138,11 +141,14 @@ export class SNACalculator {
 				const w = stack.pop()!;
 				adj.get(w)!.forEach((v) => {
 					if (dist.get(v) === dist.get(w)! + 1) {
-						delta.set(
-							v,
-							delta.get(v)! +
-								(paths.get(v)! / paths.get(w)!) * (1 + delta.get(w)!)
-						);
+						const pathsW = paths.get(w)!;
+						if (pathsW > 0) {
+							delta.set(
+								v,
+								delta.get(v)! +
+									(paths.get(v)! / pathsW) * (1 + delta.get(w)!)
+							);
+						}
 					}
 				});
 
@@ -152,13 +158,11 @@ export class SNACalculator {
 			}
 		});
 
-		// Normalize
-		const maxBetweenness = Math.max(...Array.from(centrality.values()));
-		if (maxBetweenness > 0) {
-			centrality.forEach((value, key) => {
-				centrality.set(key, value / maxBetweenness);
-			});
-		}
+		// Normalize (avoid division by zero)
+		const maxBetweenness = Math.max(...Array.from(centrality.values()), 1);
+		centrality.forEach((value, key) => {
+			centrality.set(key, value / maxBetweenness);
+		});
 
 		return centrality;
 	}
@@ -222,19 +226,22 @@ export class SNACalculator {
 				nodeIds.forEach((node) => {
 					newCentrality.set(node, newCentrality.get(node)! / norm);
 				});
+			} else {
+				// Isolated component - maintain initial value
+				nodeIds.forEach((node) => {
+					newCentrality.set(node, 1 / nodeIds.length);
+				});
 			}
 
 			centrality.clear();
 			newCentrality.forEach((value, key) => centrality.set(key, value));
 		}
 
-		// Normalize to 0-1
-		const maxEigen = Math.max(...Array.from(centrality.values()));
-		if (maxEigen > 0) {
-			centrality.forEach((value, key) => {
-				centrality.set(key, value / maxEigen);
-			});
-		}
+		// Normalize to 0-1 (avoid division by zero)
+		const maxEigen = Math.max(...Array.from(centrality.values()), 1);
+		centrality.forEach((value, key) => {
+			centrality.set(key, value / maxEigen);
+		});
 
 		return centrality;
 	}
@@ -242,6 +249,7 @@ export class SNACalculator {
 	/**
 	 * Calculate closeness centrality
 	 * Average distance to all other nodes
+	 * Uses harmonic mean to handle disconnected nodes
 	 */
 	calculateClosenessCentrality(
 		nodes: Node[],
@@ -282,26 +290,32 @@ export class SNACalculator {
 				});
 			}
 
-			const validDistances = nodeIds
-				.filter((node) => node !== source && dist.get(node)! !== Infinity)
-				.map((node) => dist.get(node)!);
+			// Use harmonic mean to handle disconnected nodes
+			let harmonicSum = 0;
+			let reachableCount = 0;
+			nodeIds.forEach((node) => {
+				if (node !== source) {
+					const d = dist.get(node)!;
+					if (d !== Infinity) {
+						harmonicSum += 1 / d;
+						reachableCount++;
+					}
+				}
+			});
 
-			if (validDistances.length > 0) {
-				const avgDistance =
-					validDistances.reduce((a, b) => a + b, 0) / validDistances.length;
-				centrality.set(source, 1 / (avgDistance + 1));
-			} else {
-				centrality.set(source, 0);
-			}
+			// Even if node is isolated, give it a small score based on reachability
+			const closeness = reachableCount > 0 
+				? harmonicSum / (nodeIds.length - 1)
+				: 0.001; // Small non-zero value for isolated nodes
+
+			centrality.set(source, closeness);
 		});
 
-		// Normalize
-		const maxCloseness = Math.max(...Array.from(centrality.values()));
-		if (maxCloseness > 0) {
-			centrality.forEach((value, key) => {
-				centrality.set(key, value / maxCloseness);
-			});
-		}
+		// Normalize (avoid division by zero)
+		const maxCloseness = Math.max(...Array.from(centrality.values()), 1);
+		centrality.forEach((value, key) => {
+			centrality.set(key, value / maxCloseness);
+		});
 
 		return centrality;
 	}
@@ -375,6 +389,7 @@ export class SNACalculator {
 	/**
 	 * Calculate harmonic centrality
 	 * Sum of reciprocals of distances
+	 * Handles disconnected nodes gracefully
 	 */
 	calculateHarmonicCentrality(
 		nodes: Node[],
@@ -416,25 +431,30 @@ export class SNACalculator {
 			}
 
 			let harmonic = 0;
+			let reachableCount = 0;
 			nodeIds.forEach((node) => {
 				if (node !== source) {
 					const d = dist.get(node)!;
 					if (d !== Infinity) {
 						harmonic += 1 / d;
+						reachableCount++;
 					}
 				}
 			});
 
-			centrality.set(source, harmonic / (nodeIds.length - 1));
+			// Normalize by reachable nodes to handle disconnected components
+			const result = reachableCount > 0 
+				? harmonic / reachableCount
+				: 0.001; // Small non-zero value for isolated nodes
+
+			centrality.set(source, result);
 		});
 
-		// Normalize
-		const maxHarmonic = Math.max(...Array.from(centrality.values()));
-		if (maxHarmonic > 0) {
-			centrality.forEach((value, key) => {
-				centrality.set(key, value / maxHarmonic);
-			});
-		}
+		// Normalize (avoid division by zero)
+		const maxHarmonic = Math.max(...Array.from(centrality.values()), 1);
+		centrality.forEach((value, key) => {
+			centrality.set(key, value / maxHarmonic);
+		});
 
 		return centrality;
 	}
@@ -464,21 +484,22 @@ export class SNACalculator {
 			const k = neighbors.length;
 
 			if (k < 2) {
+				// Node with 0 or 1 connection: clustering is 0
 				clustering.set(node, 0);
 			} else {
-				let edges = 0;
+				let edgeCount = 0;
 				for (let i = 0; i < neighbors.length; i++) {
 					for (let j = i + 1; j < neighbors.length; j++) {
 						if (
 							adj.get(neighbors[i])!.has(neighbors[j]) ||
 							adj.get(neighbors[j])!.has(neighbors[i])
 						) {
-							edges++;
+							edgeCount++;
 						}
 					}
 				}
 				const maxPossibleEdges = (k * (k - 1)) / 2;
-				clustering.set(node, edges / maxPossibleEdges);
+				clustering.set(node, maxPossibleEdges > 0 ? edgeCount / maxPossibleEdges : 0);
 			}
 		});
 
