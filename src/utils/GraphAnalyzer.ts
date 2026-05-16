@@ -1,4 +1,4 @@
-import { App, Notice } from 'obsidian';
+import { App, Notice, TAbstractFile, TFile } from 'obsidian';
 import { SNACalculator, Node, Edge, CentralityResults } from './SNACalculator';
 import { LayoutEngine } from './LayoutEngine';
 import SNAPlugin from '../main';
@@ -15,68 +15,72 @@ export class GraphAnalyzer {
 	}
 
 	/**
-	 * Extract graph data from Obsidian's graph view
+	 * Extract graph data from Obsidian's metadataCache using resolvedLinks
 	 */
 	extractGraphData(): { nodes: Node[]; edges: Edge[] } | null {
 		try {
-			const graphLeaves = (this.plugin.app.workspace as any).getLeavesOfType('graph');
-			if (!graphLeaves || graphLeaves.length === 0) {
-				new Notice('No graph view found. Please open the graph view first.');
+			const metadataCache = this.plugin.app.metadataCache;
+			const vault = this.plugin.app.vault;
+
+			// Get all markdown files
+			const files: TFile[] = [];
+			vault.getAllLoadedFiles().forEach((file: TAbstractFile) => {
+				if (file instanceof TFile && file.extension === 'md') {
+					files.push(file);
+				}
+			});
+
+			if (files.length === 0) {
+				new Notice('No markdown files found in vault.');
 				return null;
 			}
 
-			const graphView = graphLeaves[0];
-			const state = (graphView as any).view?.state;
-			const data = (graphView as any).view?.data;
+			// Create nodes from files
+			const nodeSet = new Set<string>();
+			const edges: Edge[] = [];
 
-			if (!data || !data.nodes || !data.links) {
-				new Notice('Unable to extract graph data.');
+			files.forEach((file: TFile) => {
+				const filePath = file.path;
+				nodeSet.add(filePath);
+
+				// Get resolved links for this file
+				const resolvedLinks = metadataCache.getLinks(filePath) || {};
+
+				// Process each resolved link
+				Object.keys(resolvedLinks).forEach((linkedPath: string) => {
+					nodeSet.add(linkedPath);
+
+					// Get link count (how many times this file links to the target)
+					const linkCount = resolvedLinks[linkedPath] || 1;
+
+					edges.push({
+						source: filePath,
+						target: linkedPath,
+						weight: this.plugin.settings.enableWeightedLinks
+							? linkCount
+							: 1,
+						directed: true,
+					});
+				});
+			});
+
+			// Convert node set to node array
+			const nodes: Node[] = Array.from(nodeSet).map((nodePath: string) => ({
+				id: nodePath,
+				label: nodePath.split('/').pop()?.replace('.md', '') || nodePath,
+			}));
+
+			if (nodes.length === 0 || edges.length === 0) {
+				new Notice('No links found in vault. Create some backlinks first.');
 				return null;
 			}
-
-			// Convert Obsidian graph format to our format
-			const nodes: Node[] = data.nodes.map((node: any) => ({
-				id: node.id,
-				label: node.label || node.id,
-			}));
-
-			const edges: Edge[] = data.links.map((link: any) => ({
-				source: link.source.id || link.source,
-				target: link.target.id || link.target,
-				weight: this.calculateLinkWeight(link),
-				directed: link.directed !== false,
-			}));
 
 			return { nodes, edges };
 		} catch (error) {
 			new Notice('Error extracting graph data: ' + error);
+			console.error('Graph extraction error:', error);
 			return null;
 		}
-	}
-
-	/**
-	 * Calculate weight of a link based on mentions
-	 */
-	private calculateLinkWeight(link: any): number {
-		if (this.plugin.settings.enableWeightedLinks) {
-			try {
-				const sourceId = link.source.id || link.source;
-				const targetId = link.target.id || link.target;
-				
-				// Try to get file content
-				const file = this.plugin.app.vault.getAbstractFileByPath(sourceId);
-				if (file && (file as any).vault) {
-					const content = (file as any).content || '';
-					const targetName = targetId.split('/').pop();
-					const regex = new RegExp(`\\[\\[${targetName}`, 'g');
-					const matches = content.match(regex);
-					return Math.max(1, matches ? matches.length : 1);
-				}
-			} catch (error) {
-				// Fall back to default weight
-			}
-		}
-		return 1;
 	}
 
 	/**
@@ -134,28 +138,43 @@ export class GraphAnalyzer {
 	private formatResults(results: CentralityResults): string {
 		let output = '## Social Network Analysis Results\n\n';
 
+		if (this.plugin.settings.enableCloseness) {
+			output += this.formatCentralityMap('Closeness Centrality', results.closenesssCentrality);
+		}
+
+		if (this.plugin.settings.enableBetweenness) {
+			output += this.formatCentralityMap(
+				'Betweenness Centrality',
+				results.betweennessCentrality
+			);
+		}
+
+		if (this.plugin.settings.enableEigenvector) {
+			output += this.formatCentralityMap(
+				'Eigenvector Centrality',
+				results.eigenvectorCentrality
+			);
+		}
+
 		output += this.formatCentralityMap('Degree Centrality', results.degreeCentrality);
-		output += this.formatCentralityMap(
-			'Betweenness Centrality',
-			results.betweennessCentrality
-		);
-		output += this.formatCentralityMap(
-			'Eigenvector Centrality',
-			results.eigenvectorCentrality
-		);
-		output += this.formatCentralityMap(
-			'Closeness Centrality',
-			results.closenesssCentrality
-		);
-		output += this.formatCentralityMap('PageRank', results.pageRank);
-		output += this.formatCentralityMap(
-			'Harmonic Centrality',
-			results.harmonicCentrality
-		);
-		output += this.formatCentralityMap(
-			'Clustering Coefficient',
-			results.clusteringCoefficient
-		);
+
+		if (this.plugin.settings.enablePageRank) {
+			output += this.formatCentralityMap('PageRank', results.pageRank);
+		}
+
+		if (this.plugin.settings.enableHarmonic) {
+			output += this.formatCentralityMap(
+				'Harmonic Centrality',
+				results.harmonicCentrality
+			);
+		}
+
+		if (this.plugin.settings.enableClustering) {
+			output += this.formatCentralityMap(
+				'Clustering Coefficient',
+				results.clusteringCoefficient
+			);
+		}
 
 		return output;
 	}
@@ -167,7 +186,7 @@ export class GraphAnalyzer {
 		let output = `### ${name}\n\n`;
 		const sorted = Array.from(map.entries())
 			.sort((a, b) => b[1] - a[1])
-			.slice(0, 10); // Top 10
+			.slice(0, 20); // Top 20
 
 		sorted.forEach(([node, value]) => {
 			output += `- ${node}: ${value.toFixed(4)}\n`;
