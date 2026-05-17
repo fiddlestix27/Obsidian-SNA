@@ -1,5 +1,6 @@
+
 /**
- * SNACalculator: Core calculations for social network analysis metrics
+ * Optimized SNACalculator: Core calculations for social network analysis metrics
  */
 
 export interface Node {
@@ -18,55 +19,84 @@ export interface CentralityResults {
 	degreeCentrality: Map<string, number>;
 	betweennessCentrality: Map<string, number>;
 	eigenvectorCentrality: Map<string, number>;
-	closenesssCentrality: Map<string, number>;
+	closenessCentrality: Map<string, number>;
 	pageRank: Map<string, number>;
 	harmonicCentrality: Map<string, number>;
 	clusteringCoefficient: Map<string, number>;
 }
 
+const MAX_ITERATIONS = 100;
+const CONVERGENCE_THRESHOLD = 1e-6;
+const PAGERANK_DAMPING = 0.85;
+
 export class SNACalculator {
-	/**
-	 * Calculate degree centrality
-	 * Number of connections for each node
-	 */
+
+	private buildAdjacency(
+		nodes: Node[],
+		edges: Edge[],
+		directed: boolean
+	): Map<string, Set<string>> {
+		const adj = new Map<string, Set<string>>();
+
+		nodes.forEach((node) => adj.set(node.id, new Set()));
+
+		edges.forEach((edge) => {
+			adj.get(edge.source)?.add(edge.target);
+
+			if (!directed) {
+				adj.get(edge.target)?.add(edge.source);
+			}
+		});
+
+		return adj;
+	}
+
+	calculateAllCentrality(
+		nodes: Node[],
+		edges: Edge[],
+		directed: boolean = false
+	): CentralityResults {
+
+		if (!nodes.length) {
+			throw new Error("No nodes supplied for centrality analysis");
+		}
+
+		const adjacency = this.buildAdjacency(nodes, edges, directed);
+
+		return {
+			degreeCentrality: this.calculateDegreeCentrality(nodes, edges, directed),
+			betweennessCentrality: this.calculateBetweennessCentrality(nodes, adjacency),
+			eigenvectorCentrality: this.calculateEigenvectorCentrality(nodes, edges, directed),
+			closenessCentrality: this.calculateClosenessCentrality(nodes, adjacency),
+			pageRank: this.calculatePageRank(nodes, edges, directed),
+			harmonicCentrality: this.calculateHarmonicCentrality(nodes, adjacency),
+			clusteringCoefficient: this.calculateClusteringCoefficient(nodes, adjacency, directed),
+		};
+	}
+
 	calculateDegreeCentrality(
 		nodes: Node[],
 		edges: Edge[],
 		directed: boolean = false
 	): Map<string, number> {
-		const centrality = new Map<string, number>();
 
-		// Initialize all nodes with 0
+		const centrality = new Map<string, number>();
 		nodes.forEach((node) => centrality.set(node.id, 0));
 
-		// Count connections
 		edges.forEach((edge) => {
-			if (directed) {
-				// For directed graphs, count out-degree
-				centrality.set(
-					edge.source,
-					(centrality.get(edge.source) || 0) + edge.weight
-				);
-				// Also count in-degree
-				centrality.set(
-					edge.target,
-					(centrality.get(edge.target) || 0) + edge.weight
-				);
-			} else {
-				// For undirected, count both directions
-				centrality.set(
-					edge.source,
-					(centrality.get(edge.source) || 0) + edge.weight
-				);
-				centrality.set(
-					edge.target,
-					(centrality.get(edge.target) || 0) + edge.weight
-				);
-			}
+			centrality.set(
+				edge.source,
+				(centrality.get(edge.source) || 0) + edge.weight
+			);
+
+			centrality.set(
+				edge.target,
+				(centrality.get(edge.target) || 0) + edge.weight
+			);
 		});
 
-		// Normalize (avoid division by zero)
 		const maxDegree = Math.max(...Array.from(centrality.values()), 1);
+
 		centrality.forEach((value, key) => {
 			centrality.set(key, value / maxDegree);
 		});
@@ -74,470 +104,395 @@ export class SNACalculator {
 		return centrality;
 	}
 
-	/**
-	 * Calculate betweenness centrality using Brandes' algorithm
-	 * Measures how often a node appears on shortest paths
-	 */
 	calculateBetweennessCentrality(
 		nodes: Node[],
-		edges: Edge[],
-		directed: boolean = false
+		adj: Map<string, Set<string>>
 	): Map<string, number> {
-		const centrality = new Map<string, number>();
-		nodes.forEach((node) => centrality.set(node.id, 0));
 
-		const n = nodes.length;
+		const centrality = new Map<string, number>();
 		const nodeIds = nodes.map((n) => n.id);
 
-		// Build adjacency list
-		const adj = new Map<string, string[]>();
-		nodeIds.forEach((id) => adj.set(id, []));
-		edges.forEach((edge) => {
-			if (!adj.get(edge.source)!.includes(edge.target)) {
-				adj.get(edge.source)!.push(edge.target);
-			}
-			if (!directed && !adj.get(edge.target)!.includes(edge.source)) {
-				adj.get(edge.target)!.push(edge.source);
-			}
-		});
+		nodeIds.forEach((id) => centrality.set(id, 0));
 
-		// Brandes' algorithm
-		nodeIds.forEach((source) => {
+		for (const source of nodeIds) {
+
 			const stack: string[] = [];
-			const paths = new Map<string, number>();
+			const predecessors = new Map<string, string[]>();
+			const sigma = new Map<string, number>();
 			const dist = new Map<string, number>();
 
 			nodeIds.forEach((v) => {
-				paths.set(v, 0);
+				predecessors.set(v, []);
+				sigma.set(v, 0);
 				dist.set(v, -1);
 			});
 
-			paths.set(source, 1);
+			sigma.set(source, 1);
 			dist.set(source, 0);
 
-			const queue = [source];
-			let qIndex = 0;
+			const queue: string[] = [source];
 
-			while (qIndex < queue.length) {
-				const v = queue[qIndex++];
+			while (queue.length > 0) {
+
+				const v = queue.shift()!;
 				stack.push(v);
 
-				adj.get(v)!.forEach((w) => {
+				for (const w of adj.get(v) || []) {
+
 					if (dist.get(w)! < 0) {
-						dist.set(w, dist.get(v)! + 1);
 						queue.push(w);
+						dist.set(w, dist.get(v)! + 1);
 					}
 
 					if (dist.get(w) === dist.get(v)! + 1) {
-						paths.set(w, paths.get(w)! + paths.get(v)!);
+						sigma.set(w, sigma.get(w)! + sigma.get(v)!);
+						predecessors.get(w)!.push(v);
 					}
-				});
+				}
 			}
 
 			const delta = new Map<string, number>();
 			nodeIds.forEach((v) => delta.set(v, 0));
 
 			while (stack.length > 0) {
+
 				const w = stack.pop()!;
-				adj.get(w)!.forEach((v) => {
-					if (dist.get(v) === dist.get(w)! + 1) {
-						const pathsW = paths.get(w)!;
-						if (pathsW > 0) {
-							delta.set(
-								v,
-								delta.get(v)! +
-									(paths.get(v)! / pathsW) * (1 + delta.get(w)!)
-							);
-						}
+
+				for (const v of predecessors.get(w) || []) {
+
+					const sigmaW = sigma.get(w)!;
+
+					if (sigmaW !== 0) {
+						const contribution =
+							(sigma.get(v)! / sigmaW) * (1 + delta.get(w)!);
+
+						delta.set(v, delta.get(v)! + contribution);
 					}
-				});
+				}
 
 				if (w !== source) {
-					centrality.set(w, centrality.get(w)! + delta.get(w)!);
+					centrality.set(
+						w,
+						centrality.get(w)! + delta.get(w)!
+					);
 				}
 			}
-		});
+		}
 
-		// Normalize (avoid division by zero)
-		const maxBetweenness = Math.max(...Array.from(centrality.values()), 1);
+		const maxVal = Math.max(...Array.from(centrality.values()), 1);
+
 		centrality.forEach((value, key) => {
-			centrality.set(key, value / maxBetweenness);
+			centrality.set(key, value / maxVal);
 		});
 
 		return centrality;
 	}
 
-	/**
-	 * Calculate eigenvector centrality
-	 * Importance based on connections to important nodes
-	 */
 	calculateEigenvectorCentrality(
 		nodes: Node[],
 		edges: Edge[],
-		directed: boolean = false,
-		iterations: number = 100
+		directed: boolean = false
 	): Map<string, number> {
-		const centrality = new Map<string, number>();
+
 		const nodeIds = nodes.map((n) => n.id);
+		const adjacency = new Map<string, Map<string, number>>();
 
-		// Initialize
-		nodeIds.forEach((id) => centrality.set(id, 1 / nodeIds.length));
-
-		// Build adjacency matrix
-		const adj = new Map<string, Map<string, number>>();
-		nodeIds.forEach((id) => adj.set(id, new Map()));
-		nodeIds.forEach((id) => {
-			nodeIds.forEach((jd) => adj.get(id)!.set(jd, 0));
-		});
+		nodeIds.forEach((id) => adjacency.set(id, new Map()));
 
 		edges.forEach((edge) => {
-			adj.get(edge.source)!.set(
+
+			const sourceMap = adjacency.get(edge.source)!;
+
+			sourceMap.set(
 				edge.target,
-				adj.get(edge.source)!.get(edge.target)! + edge.weight
+				(sourceMap.get(edge.target) || 0) + edge.weight
 			);
+
 			if (!directed) {
-				adj.get(edge.target)!.set(
+
+				const targetMap = adjacency.get(edge.target)!;
+
+				targetMap.set(
 					edge.source,
-					adj.get(edge.target)!.get(edge.source)! + edge.weight
+					(targetMap.get(edge.source) || 0) + edge.weight
 				);
 			}
 		});
 
-		// Power iteration
-		for (let iter = 0; iter < iterations; iter++) {
-			const newCentrality = new Map<string, number>();
+		const centrality = new Map<string, number>();
 
-			nodeIds.forEach((node) => {
-				let sum = 0;
-				nodeIds.forEach((other) => {
-					sum +=
-						(adj.get(node)!.get(other) || 0) *
-						(centrality.get(other) || 0);
-				});
-				newCentrality.set(node, sum);
-			});
+		nodeIds.forEach((id) => {
+			centrality.set(id, 1 / nodeIds.length);
+		});
 
-			// Normalize
-			const norm = Math.sqrt(
-				nodeIds.reduce((sum, node) => sum + newCentrality.get(node)! ** 2, 0)
-			);
+		for (let iter = 0; iter < MAX_ITERATIONS; iter++) {
 
-			if (norm > 0) {
-				nodeIds.forEach((node) => {
-					newCentrality.set(node, newCentrality.get(node)! / norm);
-				});
-			} else {
-				// Isolated component - maintain initial value
-				nodeIds.forEach((node) => {
-					newCentrality.set(node, 1 / nodeIds.length);
-				});
+			const next = new Map<string, number>();
+			let norm = 0;
+
+			for (const node of nodeIds) {
+
+				let score = 0;
+
+				for (const [neighbor, weight] of adjacency.get(node) || []) {
+					score += weight * (centrality.get(neighbor) || 0);
+				}
+
+				next.set(node, score);
+				norm += score * score;
 			}
 
-			centrality.clear();
-			newCentrality.forEach((value, key) => centrality.set(key, value));
+			norm = Math.sqrt(norm) || 1;
+
+			let maxDiff = 0;
+
+			for (const node of nodeIds) {
+
+				const normalized = (next.get(node) || 0) / norm;
+
+				maxDiff = Math.max(
+					maxDiff,
+					Math.abs(normalized - (centrality.get(node) || 0))
+				);
+
+				centrality.set(node, normalized);
+			}
+
+			if (maxDiff < CONVERGENCE_THRESHOLD) {
+				break;
+			}
 		}
 
-		// Normalize to 0-1 (avoid division by zero)
-		const maxEigen = Math.max(...Array.from(centrality.values()), 1);
+		return centrality;
+	}
+
+	calculateClosenessCentrality(
+		nodes: Node[],
+		adj: Map<string, Set<string>>
+	): Map<string, number> {
+
+		const centrality = new Map<string, number>();
+
+		for (const node of nodes) {
+
+			const dist = this.bfsDistances(node.id, adj);
+
+			let totalDist = 0;
+
+			dist.forEach((d) => {
+				totalDist += d;
+			});
+
+			centrality.set(
+				node.id,
+				totalDist > 0 ? (dist.size - 1) / totalDist : 0
+			);
+		}
+
+		const maxVal = Math.max(...Array.from(centrality.values()), 1);
+
 		centrality.forEach((value, key) => {
-			centrality.set(key, value / maxEigen);
+			centrality.set(key, value / maxVal);
 		});
 
 		return centrality;
 	}
 
-	/**
-	 * Calculate closeness centrality
-	 * Average distance to all other nodes
-	 * Uses harmonic mean to handle disconnected nodes
-	 */
-	calculateClosenessCentrality(
+	calculatePageRank(
 		nodes: Node[],
 		edges: Edge[],
 		directed: boolean = false
 	): Map<string, number> {
-		const centrality = new Map<string, number>();
-		const nodeIds = nodes.map((n) => n.id);
 
-		// Build adjacency list
-		const adj = new Map<string, string[]>();
-		nodeIds.forEach((id) => adj.set(id, []));
-		edges.forEach((edge) => {
-			if (!adj.get(edge.source)!.includes(edge.target)) {
-				adj.get(edge.source)!.push(edge.target);
-			}
-			if (!directed && !adj.get(edge.target)!.includes(edge.source)) {
-				adj.get(edge.target)!.push(edge.source);
-			}
-		});
-
-		// Calculate shortest paths from each node
-		nodeIds.forEach((source) => {
-			const dist = new Map<string, number>();
-			nodeIds.forEach((v) => dist.set(v, Infinity));
-			dist.set(source, 0);
-
-			const queue = [source];
-			let qIndex = 0;
-
-			while (qIndex < queue.length) {
-				const v = queue[qIndex++];
-				adj.get(v)!.forEach((w) => {
-					if (dist.get(w)! === Infinity) {
-						dist.set(w, dist.get(v)! + 1);
-						queue.push(w);
-					}
-				});
-			}
-
-			// Use harmonic mean to handle disconnected nodes
-			let harmonicSum = 0;
-			let reachableCount = 0;
-			nodeIds.forEach((node) => {
-				if (node !== source) {
-					const d = dist.get(node)!;
-					if (d !== Infinity) {
-						harmonicSum += 1 / d;
-						reachableCount++;
-					}
-				}
-			});
-
-			// Even if node is isolated, give it a small score based on reachability
-			const closeness = reachableCount > 0 
-				? harmonicSum / (nodeIds.length - 1)
-				: 0.001; // Small non-zero value for isolated nodes
-
-			centrality.set(source, closeness);
-		});
-
-		// Normalize (avoid division by zero)
-		const maxCloseness = Math.max(...Array.from(centrality.values()), 1);
-		centrality.forEach((value, key) => {
-			centrality.set(key, value / maxCloseness);
-		});
-
-		return centrality;
-	}
-
-	/**
-	 * Calculate PageRank
-	 * Based on probability of random walk through the graph
-	 */
-	calculatePageRank(
-		nodes: Node[],
-		edges: Edge[],
-		damping: number = 0.85,
-		iterations: number = 100
-	): Map<string, number> {
-		const pageRank = new Map<string, number>();
 		const nodeIds = nodes.map((n) => n.id);
 		const n = nodeIds.length;
 
-		// Initialize
-		const initialRank = 1 / n;
-		nodeIds.forEach((id) => pageRank.set(id, initialRank));
+		const pageRank = new Map<string, number>();
+		const outDegree = new Map<string, number>();
+		const incoming = new Map<string, Array<{source: string, weight: number}>>();
 
-		// Build outgoing edges map
-		const outgoing = new Map<string, string[]>();
-		const outgoingWeights = new Map<string, number>();
-		nodeIds.forEach((id) => outgoing.set(id, []));
+		nodeIds.forEach((id) => {
+			pageRank.set(id, 1 / n);
+			outDegree.set(id, 0);
+			incoming.set(id, []);
+		});
 
 		edges.forEach((edge) => {
-			if (!outgoing.get(edge.source)!.includes(edge.target)) {
-				outgoing.get(edge.source)!.push(edge.target);
-			}
-			const key = `${edge.source}->${edge.target}`;
-			outgoingWeights.set(key, (outgoingWeights.get(key) || 0) + edge.weight);
-		});
 
-		// Calculate out-degree
-		const outDegree = new Map<string, number>();
-		nodeIds.forEach((id) => {
-			const degree = outgoing.get(id)!.reduce((sum, target) => {
-				return sum + (outgoingWeights.get(`${id}->${target}`) || 1);
-			}, 0);
-			outDegree.set(id, degree || 1);
-		});
+			outDegree.set(
+				edge.source,
+				(outDegree.get(edge.source) || 0) + edge.weight
+			);
 
-		// PageRank iterations
-		for (let iter = 0; iter < iterations; iter++) {
-			const newPageRank = new Map<string, number>();
-
-			nodeIds.forEach((node) => {
-				let rank = (1 - damping) / n;
-
-				// Find incoming edges
-				edges.forEach((edge) => {
-					if (edge.target === node) {
-						const sourceRank = pageRank.get(edge.source) || 0;
-						const sourceDegree = outDegree.get(edge.source) || 1;
-						rank += damping * (sourceRank / sourceDegree) * edge.weight;
-					}
-				});
-
-				newPageRank.set(node, rank);
+			incoming.get(edge.target)?.push({
+				source: edge.source,
+				weight: edge.weight,
 			});
 
-			pageRank.clear();
-			newPageRank.forEach((value, key) => pageRank.set(key, value));
+			if (!directed) {
+
+				outDegree.set(
+					edge.target,
+					(outDegree.get(edge.target) || 0) + edge.weight
+				);
+
+				incoming.get(edge.source)?.push({
+					source: edge.target,
+					weight: edge.weight,
+				});
+			}
+		});
+
+		for (let iter = 0; iter < MAX_ITERATIONS; iter++) {
+
+			const next = new Map<string, number>();
+			let maxDiff = 0;
+
+			for (const node of nodeIds) {
+
+				let rank = (1 - PAGERANK_DAMPING) / n;
+
+				for (const edge of incoming.get(node) || []) {
+
+					const sourceRank = pageRank.get(edge.source) || 0;
+					const degree = outDegree.get(edge.source) || 1;
+
+					rank +=
+						PAGERANK_DAMPING *
+						(sourceRank / degree) *
+						edge.weight;
+				}
+
+				next.set(node, rank);
+
+				maxDiff = Math.max(
+					maxDiff,
+					Math.abs(rank - (pageRank.get(node) || 0))
+				);
+			}
+
+			next.forEach((value, key) => {
+				pageRank.set(key, value);
+			});
+
+			if (maxDiff < CONVERGENCE_THRESHOLD) {
+				break;
+			}
 		}
+
+		const maxVal = Math.max(...Array.from(pageRank.values()), 1);
+
+		pageRank.forEach((value, key) => {
+			pageRank.set(key, value / maxVal);
+		});
 
 		return pageRank;
 	}
 
-	/**
-	 * Calculate harmonic centrality
-	 * Sum of reciprocals of distances
-	 * Handles disconnected nodes gracefully
-	 */
 	calculateHarmonicCentrality(
 		nodes: Node[],
-		edges: Edge[],
-		directed: boolean = false
+		adj: Map<string, Set<string>>
 	): Map<string, number> {
+
 		const centrality = new Map<string, number>();
-		const nodeIds = nodes.map((n) => n.id);
 
-		// Build adjacency list
-		const adj = new Map<string, string[]>();
-		nodeIds.forEach((id) => adj.set(id, []));
-		edges.forEach((edge) => {
-			if (!adj.get(edge.source)!.includes(edge.target)) {
-				adj.get(edge.source)!.push(edge.target);
-			}
-			if (!directed && !adj.get(edge.target)!.includes(edge.source)) {
-				adj.get(edge.target)!.push(edge.source);
-			}
-		});
+		for (const node of nodes) {
 
-		// Calculate harmonic centrality from each node
-		nodeIds.forEach((source) => {
-			const dist = new Map<string, number>();
-			nodeIds.forEach((v) => dist.set(v, Infinity));
-			dist.set(source, 0);
+			const dist = this.bfsDistances(node.id, adj);
 
-			const queue = [source];
-			let qIndex = 0;
+			let score = 0;
 
-			while (qIndex < queue.length) {
-				const v = queue[qIndex++];
-				adj.get(v)!.forEach((w) => {
-					if (dist.get(w)! === Infinity) {
-						dist.set(w, dist.get(v)! + 1);
-						queue.push(w);
-					}
-				});
-			}
-
-			let harmonic = 0;
-			let reachableCount = 0;
-			nodeIds.forEach((node) => {
-				if (node !== source) {
-					const d = dist.get(node)!;
-					if (d !== Infinity) {
-						harmonic += 1 / d;
-						reachableCount++;
-					}
+			dist.forEach((d, key) => {
+				if (key !== node.id && d > 0) {
+					score += 1 / d;
 				}
 			});
 
-			// Normalize by reachable nodes to handle disconnected components
-			const result = reachableCount > 0 
-				? harmonic / reachableCount
-				: 0.001; // Small non-zero value for isolated nodes
+			centrality.set(node.id, score);
+		}
 
-			centrality.set(source, result);
-		});
+		const maxVal = Math.max(...Array.from(centrality.values()), 1);
 
-		// Normalize (avoid division by zero)
-		const maxHarmonic = Math.max(...Array.from(centrality.values()), 1);
 		centrality.forEach((value, key) => {
-			centrality.set(key, value / maxHarmonic);
+			centrality.set(key, value / maxVal);
 		});
 
 		return centrality;
 	}
 
-	/**
-	 * Calculate clustering coefficient
-	 * Measures how much neighbors of a node are connected
-	 */
 	calculateClusteringCoefficient(
 		nodes: Node[],
-		edges: Edge[]
+		adj: Map<string, Set<string>>,
+		directed: boolean = false
 	): Map<string, number> {
-		const clustering = new Map<string, number>();
-		const nodeIds = nodes.map((n) => n.id);
 
-		// Build adjacency set for quick lookup
-		const adj = new Map<string, Set<string>>();
-		nodeIds.forEach((id) => adj.set(id, new Set()));
-		edges.forEach((edge) => {
-			adj.get(edge.source)!.add(edge.target);
-			adj.get(edge.target)!.add(edge.source);
-		});
+		const coefficients = new Map<string, number>();
 
-		// Calculate clustering coefficient for each node
-		nodeIds.forEach((node) => {
-			const neighbors = Array.from(adj.get(node)!);
+		for (const node of nodes) {
+
+			const neighbors = Array.from(adj.get(node.id) || []);
+
 			const k = neighbors.length;
 
 			if (k < 2) {
-				// Node with 0 or 1 connection: clustering is 0
-				clustering.set(node, 0);
-			} else {
-				let edgeCount = 0;
-				for (let i = 0; i < neighbors.length; i++) {
-					for (let j = i + 1; j < neighbors.length; j++) {
-						if (
-							adj.get(neighbors[i])!.has(neighbors[j]) ||
-							adj.get(neighbors[j])!.has(neighbors[i])
-						) {
-							edgeCount++;
-						}
+				coefficients.set(node.id, 0);
+				continue;
+			}
+
+			let links = 0;
+
+			for (let i = 0; i < neighbors.length; i++) {
+				for (let j = i + 1; j < neighbors.length; j++) {
+
+					const ni = neighbors[i];
+					const nj = neighbors[j];
+
+					if (adj.get(ni)?.has(nj)) {
+						links++;
+					}
+
+					if (directed && adj.get(nj)?.has(ni)) {
+						links++;
 					}
 				}
-				const maxPossibleEdges = (k * (k - 1)) / 2;
-				clustering.set(node, maxPossibleEdges > 0 ? edgeCount / maxPossibleEdges : 0);
 			}
-		});
 
-		return clustering;
+			const possible = directed ? k * (k - 1) : (k * (k - 1)) / 2;
+
+			coefficients.set(node.id, possible > 0 ? links / possible : 0);
+		}
+
+		return coefficients;
 	}
 
-	/**
-	 * Calculate all centrality metrics at once
-	 */
-	calculateAllCentrality(
-		nodes: Node[],
-		edges: Edge[],
-		directed: boolean = false
-	): CentralityResults {
-		return {
-			degreeCentrality: this.calculateDegreeCentrality(nodes, edges, directed),
-			betweennessCentrality: this.calculateBetweennessCentrality(
-				nodes,
-				edges,
-				directed
-			),
-			eigenvectorCentrality: this.calculateEigenvectorCentrality(
-				nodes,
-				edges,
-				directed
-			),
-			closenesssCentrality: this.calculateClosenessCentrality(
-				nodes,
-				edges,
-				directed
-			),
-			pageRank: this.calculatePageRank(nodes, edges),
-			harmonicCentrality: this.calculateHarmonicCentrality(
-				nodes,
-				edges,
-				directed
-			),
-			clusteringCoefficient: this.calculateClusteringCoefficient(nodes, edges),
-		};
+	private bfsDistances(
+		source: string,
+		adj: Map<string, Set<string>>
+	): Map<string, number> {
+
+		const dist = new Map<string, number>();
+		const queue: string[] = [source];
+
+		dist.set(source, 0);
+
+		while (queue.length > 0) {
+
+			const current = queue.shift()!;
+
+			for (const neighbor of adj.get(current) || []) {
+
+				if (!dist.has(neighbor)) {
+
+					dist.set(
+						neighbor,
+						dist.get(current)! + 1
+					);
+
+					queue.push(neighbor);
+				}
+			}
+		}
+
+		return dist;
 	}
 }

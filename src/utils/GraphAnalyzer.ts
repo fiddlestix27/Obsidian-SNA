@@ -60,7 +60,7 @@ export class GraphAnalyzer {
 
 			// Get all markdown files
 			const files: TFile[] = [];
-			vault.getAllLoadedFiles().forEach((file: TAbstractFile) => {
+			vault.getMarkdownFiles().forEach((file: TAbstractFile) => {
 				if (file instanceof TFile && file.extension === 'md') {
 					// Apply graph view filter
 					if (this.matchesFilter(file.path, filter)) {
@@ -87,7 +87,7 @@ export class GraphAnalyzer {
 				nodeSet.add(filePath);
 
 				// Get resolved links for this file
-				const resolvedLinks = metadataCache.getLinks(filePath);
+				const resolvedLinks = metadataCache.resolvedLinks[filePath];
 				if (!resolvedLinks) return;
 
 				// Process each resolved link
@@ -205,7 +205,7 @@ export class GraphAnalyzer {
 		output += this.formatCentralityMap('Degree Centrality', results.degreeCentrality);
 
 		if (this.plugin.settings.enableCloseness) {
-			output += this.formatCentralityMap('Closeness Centrality', results.closenesssCentrality);
+			output += this.formatCentralityMap('Closeness Centrality', results.closenessCentrality);
 		}
 
 		if (this.plugin.settings.enableBetweenness) {
