@@ -122,10 +122,7 @@ export class GraphAnalyzer {
 				return null;
 			}
 
-			if (edges.length === 0) {
-				new Notice('No links found. Create some backlinks first.');
-				return null;
-			}
+			
 
 			console.log(`Extracted ${nodes.length} nodes and ${edges.length} edges`);
 			return { nodes, edges };
@@ -192,7 +189,7 @@ export class GraphAnalyzer {
 		console.log(message);
 
 		if (this.plugin.settings.autoExport) {
-			await this.exportResults();
+			await this.exportResultsWithResults(results);
 		}
 	}
 
@@ -250,7 +247,7 @@ export class GraphAnalyzer {
 		let output = `### ${name}\n\n`;
 		const sorted = Array.from(map.entries())
 			.sort((a, b) => b[1] - a[1])
-			.slice(0, 20); // Top 20
+			.slice(0, sorted.length);
 
 		sorted.forEach(([node, value]) => {
 			output += `- ${node}: ${value.toFixed(4)}\n`;
@@ -263,11 +260,9 @@ export class GraphAnalyzer {
 	/**
 	 * Export results to a markdown file
 	 */
-	async exportResults(): Promise<void> {
-		const results = await this.analyzeCurrentGraph();
-		if (!results) return;
+	async exportResultsWithResults(results: CentralityResults): Promise<void> {
 
-		const content = this.formatResults(results);
+				const content = this.formatResults(results);
 		const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
 		const filename = `SNA-Results-${timestamp}.md`;
 
