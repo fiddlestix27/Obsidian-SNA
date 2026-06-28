@@ -1,3 +1,5 @@
+import { NormalizationOptions } from './utils/SNACalculator';
+
 export interface SNASettings {
 	enableDirectional: boolean;
 	enableWeightedLinks: boolean;
@@ -10,6 +12,8 @@ export interface SNASettings {
 	enableEigenvector: boolean;
 	enablePageRank: boolean;
 	enableHarmonic: boolean;
+	// Normalization toggle settings
+	normalizationOptions: NormalizationOptions;
 }
 
 export const DEFAULT_SETTINGS: SNASettings = {
@@ -24,4 +28,14 @@ export const DEFAULT_SETTINGS: SNASettings = {
 	enableEigenvector: true,
 	enablePageRank: true,
 	enableHarmonic: true,
+	// Default normalization options: industry standard settings
+	normalizationOptions: {
+		degreeCentrality: true,
+		betweennessCentrality: false,
+		eigenvectorCentrality: false,
+		closenessCentrality: true,
+		pageRank: false,
+		harmonicCentrality: false,
+		clusteringCoefficient: true,
+	},
 };

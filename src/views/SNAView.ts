@@ -1,15 +1,17 @@
 import { ItemView, WorkspaceLeaf } from 'obsidian';
 import SNAPlugin from '../main';
-import { CentralityResults } from '../utils/SNACalculator';
+import { CentralityResults, NormalizationOptions } from '../utils/SNACalculator';
 
 export const VIEW_TYPE_SNA = 'sna-view';
 
 export class SNAView extends ItemView {
 	plugin: SNAPlugin;
+	currentNormalizationOptions: NormalizationOptions;
 
 	constructor(leaf: WorkspaceLeaf, plugin: SNAPlugin) {
 		super(leaf);
 		this.plugin = plugin;
+		this.currentNormalizationOptions = { ...plugin.settings.normalizationOptions };
 	}
 
 	getViewType(): string {
@@ -42,7 +44,9 @@ export class SNAView extends ItemView {
 			text: 'Analyze Graph',
 		});
 		analyzeBtn.addEventListener('click', async () => {
-			const results = await this.plugin.graphAnalyzer.analyzeCurrentGraph();
+			const results = await this.plugin.graphAnalyzer.analyzeCurrentGraph(
+				this.currentNormalizationOptions
+			);
 			if (results) {
 				this.displayResults(content, results);
 			}
@@ -54,6 +58,52 @@ export class SNAView extends ItemView {
 		});
 		exportBtn.addEventListener('click', async () => {
 			await this.plugin.graphAnalyzer.exportResults();
+		});
+
+		// Normalization toggle section
+		const normalizationDiv = content.createDiv({ cls: 'normalization-toggles' });
+		normalizationDiv.createEl('h3', { text: 'Normalization Options' });
+		normalizationDiv.createEl('p', {
+			text: 'Toggle normalization on/off for each metric to compare raw vs normalized values:',
+		});
+
+		const togglesContainer = normalizationDiv.createDiv({ cls: 'toggles-grid' });
+
+		// Create toggle for each metric
+		const metrics: Array<{ key: keyof NormalizationOptions; label: string }> = [
+			{ key: 'degreeCentrality', label: 'Degree Centrality' },
+			{ key: 'betweennessCentrality', label: 'Betweenness Centrality' },
+			{ key: 'eigenvectorCentrality', label: 'Eigenvector Centrality' },
+			{ key: 'closenessCentrality', label: 'Closeness Centrality' },
+			{ key: 'pageRank', label: 'PageRank' },
+			{ key: 'harmonicCentrality', label: 'Harmonic Centrality' },
+			{ key: 'clusteringCoefficient', label: 'Clustering Coefficient' },
+		];
+
+		metrics.forEach(({ key, label }) => {
+			const toggleDiv = togglesContainer.createDiv({ cls: 'toggle-item' });
+			toggleDiv.createEl('label', {
+				text: label,
+				cls: 'toggle-label',
+			});
+
+			const checkbox = toggleDiv.createEl('input', {
+				type: 'checkbox',
+				cls: 'toggle-checkbox',
+			});
+			checkbox.checked = this.currentNormalizationOptions[key] ?? true;
+			checkbox.addEventListener('change', () => {
+				this.currentNormalizationOptions[key] = checkbox.checked;
+			});
+
+			const statusSpan = toggleDiv.createEl('span', {
+				text: checkbox.checked ? 'Normalized' : 'Raw',
+				cls: 'toggle-status',
+			});
+
+			checkbox.addEventListener('change', () => {
+				statusSpan.textContent = checkbox.checked ? 'Normalized' : 'Raw';
+			});
 		});
 
 		// Settings info
@@ -117,7 +167,7 @@ export class SNAView extends ItemView {
 		this.createResultTab(
 			tabs,
 			'Closeness Centrality',
-			results.closenesssCentrality
+			results.closenessCentrality
 		);
 
 		// PageRank
