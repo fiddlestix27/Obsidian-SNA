@@ -1,5 +1,5 @@
 import { App, Notice, TAbstractFile, TFile } from 'obsidian';
-import { SNACalculator, Node, Edge, CentralityResults } from './SNACalculator';
+import { SNACalculator, Node, Edge, CentralityResults, NormalizationOptions } from './SNACalculator';
 import { LayoutEngine } from './LayoutEngine';
 import SNAPlugin from '../main';
 
@@ -147,9 +147,9 @@ export class GraphAnalyzer {
 	}
 
 	/**
-	 * Analyze the current graph
+	 * Analyze the current graph with normalization options
 	 */
-	async analyzeCurrentGraph(): Promise<CentralityResults | null> {
+	async analyzeCurrentGraph(normalizationOptions?: NormalizationOptions): Promise<CentralityResults | null> {
 		const graphData = this.extractGraphData();
 		if (!graphData) return null;
 
@@ -170,10 +170,14 @@ export class GraphAnalyzer {
 			return null;
 		}
 
+		// Use provided normalization options or fall back to settings
+		const options = normalizationOptions || this.plugin.settings.normalizationOptions;
+
 		const results = this.calculator.calculateAllCentrality(
 			nodes,
 			filteredEdges,
-			this.plugin.settings.enableDirectional
+			this.plugin.settings.enableDirectional,
+			options
 		);
 
 		new Notice('Graph analysis complete!');
