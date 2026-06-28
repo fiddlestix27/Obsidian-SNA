@@ -1,6 +1,7 @@
 
 /**
  * Optimized SNACalculator: Core calculations for social network analysis metrics
+ * With support for normalization toggle for each centrality measure
  */
 
 export interface Node {
@@ -13,6 +14,16 @@ export interface Edge {
 	target: string;
 	weight: number;
 	directed: boolean;
+}
+
+export interface NormalizationOptions {
+	degreeCentrality?: boolean;
+	betweennessCentrality?: boolean;
+	eigenvectorCentrality?: boolean;
+	closenessCentrality?: boolean;
+	pageRank?: boolean;
+	harmonicCentrality?: boolean;
+	clusteringCoefficient?: boolean;
 }
 
 export interface CentralityResults {
@@ -54,7 +65,8 @@ export class SNACalculator {
 	calculateAllCentrality(
 		nodes: Node[],
 		edges: Edge[],
-		directed: boolean = false
+		directed: boolean = false,
+		normalizationOptions?: NormalizationOptions
 	): CentralityResults {
 
 		if (!nodes.length) {
@@ -63,13 +75,24 @@ export class SNACalculator {
 
 		const adjacency = this.buildAdjacency(nodes, edges, directed);
 
+		// Default normalization options: normalize metrics that are typically normalized in industry standards
+		const options: NormalizationOptions = {
+			degreeCentrality: normalizationOptions?.degreeCentrality ?? true,
+			betweennessCentrality: normalizationOptions?.betweennessCentrality ?? false,
+			eigenvectorCentrality: normalizationOptions?.eigenvectorCentrality ?? false,
+			closenessCentrality: normalizationOptions?.closenessCentrality ?? true,
+			pageRank: normalizationOptions?.pageRank ?? false,
+			harmonicCentrality: normalizationOptions?.harmonicCentrality ?? false,
+			clusteringCoefficient: normalizationOptions?.clusteringCoefficient ?? true,
+		};
+
 		return {
-			degreeCentrality: this.calculateDegreeCentrality(nodes, edges, directed),
-			betweennessCentrality: this.calculateBetweennessCentrality(nodes, adjacency),
-			eigenvectorCentrality: this.calculateEigenvectorCentrality(nodes, edges, directed),
-			closenessCentrality: this.calculateClosenessCentrality(nodes, adjacency),
-			pageRank: this.calculatePageRank(nodes, edges, directed),
-			harmonicCentrality: this.calculateHarmonicCentrality(nodes, adjacency),
+			degreeCentrality: this.calculateDegreeCentrality(nodes, edges, directed, options.degreeCentrality),
+			betweennessCentrality: this.calculateBetweennessCentrality(nodes, adjacency, directed, options.betweennessCentrality),
+			eigenvectorCentrality: this.calculateEigenvectorCentrality(nodes, edges, directed, options.eigenvectorCentrality),
+			closenessCentrality: this.calculateClosenessCentrality(nodes, adjacency, options.closenessCentrality),
+			pageRank: this.calculatePageRank(nodes, edges, directed, options.pageRank),
+			harmonicCentrality: this.calculateHarmonicCentrality(nodes, adjacency, options.harmonicCentrality),
 			clusteringCoefficient: this.calculateClusteringCoefficient(nodes, adjacency, directed),
 		};
 	}
@@ -77,7 +100,8 @@ export class SNACalculator {
 	calculateDegreeCentrality(
 		nodes: Node[],
 		edges: Edge[],
-		directed: boolean = false
+		directed: boolean = false,
+		normalize: boolean = true
 	): Map<string, number> {
 
 		const centrality = new Map<string, number>();
@@ -89,24 +113,30 @@ export class SNACalculator {
 				(centrality.get(edge.source) || 0) + edge.weight
 			);
 
-			centrality.set(
-				edge.target,
-				(centrality.get(edge.target) || 0) + edge.weight
-			);
+			if (!directed) {
+				centrality.set(
+					edge.target,
+					(centrality.get(edge.target) || 0) + edge.weight
+				);
+			}
 		});
 
-		const maxDegree = Math.max(...Array.from(centrality.values()), 1);
+		if (normalize) {
+			const maxDegree = Math.max(...Array.from(centrality.values()), 1);
 
-		centrality.forEach((value, key) => {
-			centrality.set(key, value / maxDegree);
-		});
+			centrality.forEach((value, key) => {
+				centrality.set(key, value / maxDegree);
+			});
+		}
 
 		return centrality;
 	}
 
 	calculateBetweennessCentrality(
 		nodes: Node[],
-		adj: Map<string, Set<string>>
+		adj: Map<string, Set<string>>,
+		directed: boolean = false,
+		normalize: boolean = false
 	): Map<string, number> {
 
 		const centrality = new Map<string, number>();
@@ -179,11 +209,20 @@ export class SNACalculator {
 			}
 		}
 
-		const maxVal = Math.max(...Array.from(centrality.values()), 1);
+		// For undirected graphs, divide by 2 (each path counted twice)
+		if (!directed) {
+			centrality.forEach((value, key) => {
+				centrality.set(key, value / 2);
+			});
+		}
 
-		centrality.forEach((value, key) => {
-			centrality.set(key, value / maxVal);
-		});
+		if (normalize) {
+			const maxVal = Math.max(...Array.from(centrality.values()), 1);
+
+			centrality.forEach((value, key) => {
+				centrality.set(key, value / maxVal);
+			});
+		}
 
 		return centrality;
 	}
@@ -191,7 +230,8 @@ export class SNACalculator {
 	calculateEigenvectorCentrality(
 		nodes: Node[],
 		edges: Edge[],
-		directed: boolean = false
+		directed: boolean = false,
+		normalize: boolean = false
 	): Map<string, number> {
 
 		const nodeIds = nodes.map((n) => n.id);
@@ -224,6 +264,9 @@ export class SNACalculator {
 		nodeIds.forEach((id) => {
 			centrality.set(id, 1 / nodeIds.length);
 		});
+
+		// Store raw values before any normalization
+		const rawValues = new Map<string, number>();
 
 		for (let iter = 0; iter < MAX_ITERATIONS; iter++) {
 
@@ -263,12 +306,26 @@ export class SNACalculator {
 			}
 		}
 
+		// Store the converged values
+		centrality.forEach((value, key) => {
+			rawValues.set(key, value);
+		});
+
+		if (normalize) {
+			const maxVal = Math.max(...Array.from(rawValues.values()), 1);
+
+			rawValues.forEach((value, key) => {
+				centrality.set(key, value / maxVal);
+			});
+		}
+
 		return centrality;
 	}
 
 	calculateClosenessCentrality(
 		nodes: Node[],
-		adj: Map<string, Set<string>>
+		adj: Map<string, Set<string>>,
+		normalize: boolean = true
 	): Map<string, number> {
 
 		const centrality = new Map<string, number>();
@@ -289,11 +346,13 @@ export class SNACalculator {
 			);
 		}
 
-		const maxVal = Math.max(...Array.from(centrality.values()), 1);
+		if (normalize) {
+			const maxVal = Math.max(...Array.from(centrality.values()), 1);
 
-		centrality.forEach((value, key) => {
-			centrality.set(key, value / maxVal);
-		});
+			centrality.forEach((value, key) => {
+				centrality.set(key, value / maxVal);
+			});
+		}
 
 		return centrality;
 	}
@@ -301,7 +360,8 @@ export class SNACalculator {
 	calculatePageRank(
 		nodes: Node[],
 		edges: Edge[],
-		directed: boolean = false
+		directed: boolean = false,
+		normalize: boolean = false
 	): Map<string, number> {
 
 		const nodeIds = nodes.map((n) => n.id);
@@ -380,18 +440,21 @@ export class SNACalculator {
 			}
 		}
 
-		const maxVal = Math.max(...Array.from(pageRank.values()), 1);
+		if (normalize) {
+			const maxVal = Math.max(...Array.from(pageRank.values()), 1);
 
-		pageRank.forEach((value, key) => {
-			pageRank.set(key, value / maxVal);
-		});
+			pageRank.forEach((value, key) => {
+				pageRank.set(key, value / maxVal);
+			});
+		}
 
 		return pageRank;
 	}
 
 	calculateHarmonicCentrality(
 		nodes: Node[],
-		adj: Map<string, Set<string>>
+		adj: Map<string, Set<string>>,
+		normalize: boolean = false
 	): Map<string, number> {
 
 		const centrality = new Map<string, number>();
@@ -411,11 +474,13 @@ export class SNACalculator {
 			centrality.set(node.id, score);
 		}
 
-		const maxVal = Math.max(...Array.from(centrality.values()), 1);
+		if (normalize) {
+			const maxVal = Math.max(...Array.from(centrality.values()), 1);
 
-		centrality.forEach((value, key) => {
-			centrality.set(key, value / maxVal);
-		});
+			centrality.forEach((value, key) => {
+				centrality.set(key, value / maxVal);
+			});
+		}
 
 		return centrality;
 	}
@@ -462,6 +527,7 @@ export class SNACalculator {
 			coefficients.set(node.id, possible > 0 ? links / possible : 0);
 		}
 
+		// Clustering coefficient always returns normalized 0-1
 		return coefficients;
 	}
 
