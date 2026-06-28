@@ -50,6 +50,8 @@ npm install
 npm run build
 ```
 
+or alternatively run setup.bat (Windows) or setup.sh (Linux/MacOS)
+
 3. Copy the built files to your Obsidian vault's plugins folder:
 ```bash
 # On macOS/Linux:
@@ -213,7 +215,7 @@ Contributions are welcome! Please:
 
 ## License
 
-MIT License
+GNU GPL v3 License
 
 ## Support
 
