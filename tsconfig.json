@@ -1,21 +1,17 @@
 {
   "compilerOptions": {
-    "baseUrl": ".",
-    "outDir": "./",
-    "rootDir": "./src",
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["DOM", "ES2020"],
+    "strict": true,
     "allowJs": true,
     "noImplicitAny": true,
-    "moduleResolution": "node",
-    "importHelpers": true,
     "isolatedModules": true,
-    "lib": [
-      "DOM",
-      "ES5",
-      "ES6",
-      "ES7"
-    ]
+    "importHelpers": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "noEmit": true
   },
-  "include": [
-    "**/*.ts"
-  ]
+  "include": ["src/**/*"]
 }
