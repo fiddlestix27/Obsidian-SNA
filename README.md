@@ -1,6 +1,6 @@
 # Obsidian Social Network Analysis Plugin
 
-A powerful Obsidian plugin for analyzing the social networks within your knowledge base using graph theory metrics and visualization.
+Obsidian plugin for analyzing the social networks within your knowledge base using graph theory metrics and visualization.
 
 ## Features
 
@@ -18,64 +18,10 @@ A powerful Obsidian plugin for analyzing the social networks within your knowled
 
 ```bash
 # Clone the repository
-git clone https://github.com/fiddlestix27/Obsidian-SNA.git
-cd Obsidian-SNA
-
-# Install dependencies and build
-npm install && npm run build
-
-# Copy to your Obsidian plugins folder
-# macOS/Linux:
-cp -r . ~/.obsidian/plugins/obsidian-sna/
-
-# Windows (PowerShell):
-Copy-Item -Recurse -Force . $env:APPDATA\.obsidian\plugins\obsidian-sna\
-```
+Navigate to your plugins folder under the current Obsidian Vault. If it does not exist yet, click the file folder icon near "Installed plugins" under the "Community plugins" tab to create the folder and navigate to it.
+Open a terminal here and git clone https://github.com/fiddlestix27/Obsidian-SNA.git
 
 That's it! The plugin is ready to use in Obsidian.
-
-## Installation
-
-### Standard Installation
-
-1. Clone this repository:
-```bash
-git clone https://github.com/fiddlestix27/Obsidian-SNA.git
-cd Obsidian-SNA
-```
-
-2. Install dependencies and build:
-```bash
-npm install
-npm run build
-```
-
-or alternatively run setup.bat (Windows) or setup.sh (Linux/MacOS)
-
-3. Copy the built files to your Obsidian vault's plugins folder:
-```bash
-# On macOS/Linux:
-mkdir -p ~/.obsidian/plugins/obsidian-sna
-cp main.js manifest.json styles.css ~/.obsidian/plugins/obsidian-sna/
-
-# On Windows (PowerShell):
-New-Item -ItemType Directory -Force -Path "$env:APPDATA\.obsidian\plugins\obsidian-sna\" | Out-Null
-Copy-Item main.js, manifest.json, styles.css -Destination "$env:APPDATA\.obsidian\plugins\obsidian-sna\"
-```
-
-4. Restart Obsidian and enable the plugin in Settings → Community plugins
-
-### Development Setup
-
-For development, clone the plugin directly into your vault's plugins folder:
-
-```bash
-cd <your-vault>/.obsidian/plugins
-git clone https://github.com/fiddlestix27/Obsidian-SNA.git obsidian-sna
-cd obsidian-sna
-npm install
-npm run dev
-```
 
 ## Usage
 
@@ -112,41 +58,6 @@ Toggle individual centrality measures on/off:
 - Eigenvector Centrality
 - PageRank
 - Harmonic Centrality
-
-## Building
-
-### Development Build
-```bash
-npm run dev
-```
-Starts esbuild in watch mode with inline sourcemaps for easy debugging.
-
-### Production Build
-```bash
-npm run build
-```
-Creates an optimized bundle ready for distribution.
-
-## File Structure
-
-```
-obsidian-sna/
-├── src/
-│   ├── main.ts              # Main plugin class
-│   ├── settings.ts          # Plugin settings interface
-│   ├── utils/
-│   │   ├── SNACalculator.ts # Centrality algorithms
-│   │   ├── GraphAnalyzer.ts # Graph extraction & analysis
-│   │   └── LayoutEngine.ts  # Graph layout algorithms
-│   └── views/
-│       └── SNAView.ts       # UI panel component
-├── manifest.json            # Plugin metadata
-├── package.json             # Dependencies
-├── tsconfig.json            # TypeScript configuration
-├── esbuild.config.mjs       # Build configuration
-├── styles.css               # Plugin styling
-└── README.md                # Documentation
-```
 
 ## Centrality Measures Explained
 
