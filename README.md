@@ -1,6 +1,6 @@
 # Obsidian Social Network Analysis Plugin
 
-A powerful Obsidian plugin for analyzing the social networks within your knowledge base using graph theory metrics and visualization.
+Obsidian plugin for analyzing the social networks within your knowledge base using graph theory metrics and visualization.
 
 ## Features
 
@@ -24,10 +24,7 @@ A powerful Obsidian plugin for analyzing the social networks within your knowled
    cd .obsidian/plugins
    git clone https://github.com/fiddlestix27/Obsidian-SNA.git
    ```
-
-3. Restart Obsidian and enable the plugin in Settings → Community plugins
-
-That's it! The plugin is ready to use with pre-compiled files included.
+That's it! The plugin is ready to use.
 
 ## Development Setup (Contributors)
 
@@ -35,9 +32,9 @@ If you want to modify the plugin, follow these steps:
 
 ### Setup
 
-1. Clone the repository into your plugins folder:
+1. Clone the repository into your development folder (development within the actual plugins folder is not recommended):
    ```bash
-   cd <your-vault>/.obsidian/plugins
+   cd <repository-development-folder>
    git clone https://github.com/fiddlestix27/Obsidian-SNA.git obsidian-sna
    cd obsidian-sna
    ```
@@ -49,7 +46,7 @@ If you want to modify the plugin, follow these steps:
 
 ### Making Changes
 
-1. Edit the source files in the `src/` directory
+1. Make your desired changes
 
 2. Remove the current `main.js` file
 
@@ -132,13 +129,6 @@ Measures how much neighbors of a node are connected. High clustering indicates t
 - Node.js 14+ (for development/building from source)
 - npm (for development/building from source)
 
-## Technologies Used
-
-- **esbuild**: Ultra-fast TypeScript/JavaScript bundler
-- **TypeScript**: Type-safe development
-- **Obsidian API**: Plugin framework
-- **Graph Algorithms**: Custom implementations of network analysis algorithms
-
 ## Performance
 
 The plugin is optimized for networks up to 5,000+ nodes. For very large graphs, analysis may take several seconds depending on your hardware.
@@ -186,13 +176,3 @@ For issues, feature requests, or questions:
 - Interactive UI panel
 - Settings and customization
 - Auto-export functionality
-
-## Roadmap
-
-Future features planned:
-- Community detection algorithms
-- Interactive graph visualization
-- Real-time analysis updates
-- Export to multiple formats (JSON, CSV)
-- Custom metric definitions
-- Performance improvements for large graphs
