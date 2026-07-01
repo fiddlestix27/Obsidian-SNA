@@ -23,6 +23,15 @@ Open a terminal here and git clone https://github.com/fiddlestix27/Obsidian-SNA.
 
 That's it! The plugin is ready to use in Obsidian.
 
+### **Development Build**
+Clone the repository as instructed above, remove main.js, and make desired changes.
+
+Then recompile:
+`npm install`
+`npm run build`
+
+The new main.js should appear.
+
 ## Usage
 
 ### Opening the Plugin
