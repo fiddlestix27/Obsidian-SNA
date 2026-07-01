@@ -6,7 +6,7 @@ Obsidian plugin for analyzing the social networks within your knowledge base usi
 
 - **Multiple Centrality Measures**: Degree, Betweenness, Eigenvector, Closeness, PageRank, and Harmonic centrality
 - **Clustering Analysis**: Calculate clustering coefficients to identify communities
-- **Layout Algorithms**: Force-directed, hierarchical, and circular graph layouts
+- **Layout Algorithms**: Force-directed, hierarchical, and circular graph layouts (**this is currently not working, but will be updated in the future**)
 - **Weighted Links**: Optional link weighting based on mention frequency
 - **Directional Analysis**: Analyze backlink direction in your graph
 - **Auto-Export**: Automatically export analysis results to markdown files
