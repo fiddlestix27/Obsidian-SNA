@@ -1,6 +1,6 @@
 # Obsidian Social Network Analysis Plugin
 
-Obsidian plugin for analyzing the social networks within your knowledge base using graph theory metrics and visualization.
+A powerful Obsidian plugin for analyzing the social networks within your knowledge base using graph theory metrics and visualization.
 
 ## Features
 
@@ -12,25 +12,60 @@ Obsidian plugin for analyzing the social networks within your knowledge base usi
 - **Auto-Export**: Automatically export analysis results to markdown files
 - **Interactive UI**: View results in a dedicated panel with sortable metrics
 
-## Quick Start
+## Quick Start (Users)
 
-### Clone and Setup (No Manual Configuration)
+### Installation
 
-```bash
-# Clone the repository
-Navigate to your plugins folder under the current Obsidian Vault. If it does not exist yet, click the file folder icon near "Installed plugins" under the "Community plugins" tab to create the folder and navigate to it.
-Open a terminal here and git clone https://github.com/fiddlestix27/Obsidian-SNA.git
+1. Navigate to your Obsidian vault's plugins folder: `.obsidian/plugins/`
+   - If it doesn't exist, enable "Community plugins" in Settings and click the folder icon next to "Installed plugins"
 
-That's it! The plugin is ready to use in Obsidian.
+2. Clone this repository into the plugins folder:
+   ```bash
+   cd .obsidian/plugins
+   git clone https://github.com/fiddlestix27/Obsidian-SNA.git
+   ```
 
-### **Development Build**
-Clone the repository as instructed above, remove main.js, and make desired changes.
+3. Restart Obsidian and enable the plugin in Settings → Community plugins
 
-Then recompile:
-`npm install`
-`npm run build`
+That's it! The plugin is ready to use with pre-compiled files included.
 
-The new main.js should appear.
+## Development Setup (Contributors)
+
+If you want to modify the plugin, follow these steps:
+
+### Setup
+
+1. Clone the repository into your plugins folder:
+   ```bash
+   cd <your-vault>/.obsidian/plugins
+   git clone https://github.com/fiddlestix27/Obsidian-SNA.git obsidian-sna
+   cd obsidian-sna
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+### Making Changes
+
+1. Edit the source files in the `src/` directory
+
+2. Remove the current `main.js` file
+
+3. Recompile the plugin:
+   ```bash
+   npm run build
+   ```
+   
+   Or for development with watch mode:
+   ```bash
+   npm run dev
+   ```
+
+4. Restart Obsidian to see your changes
+
+The recompiled `main.js` will be generated automatically.
 
 ## Usage
 
@@ -94,8 +129,8 @@ Measures how much neighbors of a node are connected. High clustering indicates t
 ## System Requirements
 
 - Obsidian 0.15.0 or higher
-- Node.js 14+ (for building from source)
-- npm or yarn
+- Node.js 14+ (for development/building from source)
+- npm (for development/building from source)
 
 ## Technologies Used
 
@@ -111,7 +146,7 @@ The plugin is optimized for networks up to 5,000+ nodes. For very large graphs, 
 ## Troubleshooting
 
 ### Plugin won't load
-- Ensure manifest.json, main.js, and styles.css are in the plugin folder
+- Ensure `manifest.json`, `main.js`, and `styles.css` are in the plugin folder
 - Restart Obsidian
 - Check Obsidian console for error messages (Settings → About → Open debug console)
 
@@ -131,7 +166,8 @@ Contributions are welcome! Please:
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Submit a pull request
+4. Run `npm run build` to recompile
+5. Submit a pull request
 
 ## License
 
