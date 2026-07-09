@@ -92,7 +92,7 @@ export class SNAView extends ItemView {
 				type: 'checkbox',
 				cls: 'toggle-checkbox',
 			});
-			if (checkbox instanceof HTMLInputElement) {
+			if (checkbox.instanceOf(HTMLInputElement)) {
 				checkbox.checked = this.currentNormalizationOptions[key] ?? true;
 				checkbox.addEventListener('change', () => {
 					this.currentNormalizationOptions[key] = checkbox.checked;
