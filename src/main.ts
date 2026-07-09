@@ -21,38 +21,47 @@ export default class SNAPlugin extends Plugin {
 		// Add commands
 		this.addCommand({
 			id: 'open-sna-view',
-			name: 'Open Social Network Analysis',
-			callback: () => void this.activateSNAView(),
+			name: 'Open',
+			callback: () => {
+				void this.activateSNAView();
+			},
 		});
 
 		this.addCommand({
 			id: 'analyze-graph',
-			name: 'Analyze Current Graph',
-			callback: () => void this.graphAnalyzer.analyzeCurrentGraph(),
+			name: 'Analyze Graph',
+			callback: () => {
+				void this.graphAnalyzer.analyzeCurrentGraph();
+			},
 		});
 
 		this.addCommand({
 			id: 'calculate-centrality',
 			name: 'Calculate Centrality Measures',
-			callback: () => void this.graphAnalyzer.calculateAllCentrality(),
+			callback: () => {
+				void this.graphAnalyzer.calculateAllCentrality();
+			},
 		});
 
 		this.addCommand({
 			id: 'export-analysis',
 			name: 'Export Results',
-			callback: () => void this.graphAnalyzer.exportResults(),
+			callback: () => {
+				void this.graphAnalyzer.exportResults();
+			},
 		});
 
 		// Add settings tab
 		this.addSettingTab(new SNASettingTab(this.app, this));
 	}
 
-	async onunload() {
+	onunload() {
 		// Cleanup
 	}
 
 	async loadSettings() {
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+		const data = (await this.loadData()) as SNASettings | null;
+		this.settings = Object.assign({}, DEFAULT_SETTINGS, data);
 	}
 
 	async saveSettings() {
@@ -86,7 +95,7 @@ class SNASettingTab extends PluginSettingTab {
 		containerEl.empty();
 
 		new Setting(containerEl)
-			.setName('Social Network Analysis Settings')
+			.setName('Options')
 			.setHeading();
 
 		new Setting(containerEl)
@@ -166,7 +175,7 @@ class SNASettingTab extends PluginSettingTab {
 			);
 
 		new Setting(containerEl)
-			.setName('Individual Metrics')
+			.setName('Metrics')
 			.setHeading();
 
 		new Setting(containerEl)

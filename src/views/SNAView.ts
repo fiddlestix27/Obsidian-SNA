@@ -43,21 +43,22 @@ export class SNAView extends ItemView {
 		const analyzeBtn = buttonContainer.createEl('button', {
 			text: 'Analyze Graph',
 		});
-		analyzeBtn.addEventListener('click', async () => {
-			const results = await this.plugin.graphAnalyzer.analyzeCurrentGraph(
+		analyzeBtn.addEventListener('click', () => {
+			void this.plugin.graphAnalyzer.analyzeCurrentGraph(
 				this.currentNormalizationOptions
-			);
-			if (results) {
-				this.displayResults(content, results);
-			}
+			).then((results) => {
+				if (results) {
+					this.displayResults(content, results);
+				}
+			});
 		});
 
 		// Export button
 		const exportBtn = buttonContainer.createEl('button', {
 			text: 'Export Results',
 		});
-		exportBtn.addEventListener('click', async () => {
-			await this.plugin.graphAnalyzer.exportResults();
+		exportBtn.addEventListener('click', () => {
+			void this.plugin.graphAnalyzer.exportResults();
 		});
 
 		// Normalization toggle section
@@ -90,20 +91,22 @@ export class SNAView extends ItemView {
 			const checkbox = toggleDiv.createEl('input', {
 				type: 'checkbox',
 				cls: 'toggle-checkbox',
-			}) as HTMLInputElement;
-			checkbox.checked = this.currentNormalizationOptions[key] ?? true;
-			checkbox.addEventListener('change', () => {
-				this.currentNormalizationOptions[key] = checkbox.checked;
 			});
+			if (checkbox instanceof HTMLInputElement) {
+				checkbox.checked = this.currentNormalizationOptions[key] ?? true;
+				checkbox.addEventListener('change', () => {
+					this.currentNormalizationOptions[key] = checkbox.checked;
+				});
 
-			const statusSpan = toggleDiv.createEl('span', {
-				text: checkbox.checked ? 'Normalized' : 'Raw',
-				cls: 'toggle-status',
-			});
+				const statusSpan = toggleDiv.createEl('span', {
+					text: checkbox.checked ? 'Normalized' : 'Raw',
+					cls: 'toggle-status',
+				});
 
-			checkbox.addEventListener('change', () => {
-				statusSpan.textContent = checkbox.checked ? 'Normalized' : 'Raw';
-			});
+				checkbox.addEventListener('change', () => {
+					statusSpan.textContent = checkbox.checked ? 'Normalized' : 'Raw';
+				});
+			}
 		});
 
 		// Settings info
