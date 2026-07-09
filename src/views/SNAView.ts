@@ -33,7 +33,7 @@ export class SNAView extends ItemView {
 
 		// Description
 		content.createEl('p', {
-			text: 'Analyze the structure and relationships in your Obsidian graph.',
+			text: 'Analyze the structure and relationships in your graph.',
 		});
 
 		// Button container
@@ -90,7 +90,7 @@ export class SNAView extends ItemView {
 			const checkbox = toggleDiv.createEl('input', {
 				type: 'checkbox',
 				cls: 'toggle-checkbox',
-			});
+			}) as HTMLInputElement;
 			checkbox.checked = this.currentNormalizationOptions[key] ?? true;
 			checkbox.addEventListener('change', () => {
 				this.currentNormalizationOptions[key] = checkbox.checked;

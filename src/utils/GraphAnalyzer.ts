@@ -1,4 +1,4 @@
-import { App, Notice, TAbstractFile, TFile } from 'obsidian';
+import { Notice, TAbstractFile, TFile } from 'obsidian';
 import { SNACalculator, Node, Edge, CentralityResults, NormalizationOptions } from './SNACalculator';
 import { LayoutEngine } from './LayoutEngine';
 import SNAPlugin from '../main';
@@ -19,11 +19,14 @@ export class GraphAnalyzer {
 	 */
 	private getGraphViewFilter(): string | null {
 		try {
-			const graphLeaves = (this.plugin.app.workspace as any).getLeavesOfType('graph');
+			const graphLeaves = (this.plugin.app.workspace as Record<string, unknown>).getLeavesOfType('graph') as unknown[];
 			if (graphLeaves && graphLeaves.length > 0) {
-				const graphState = (graphLeaves[0] as any).view?.state;
-				if (graphState && graphState.query) {
-					return graphState.query;
+				const graphState = (graphLeaves[0] as Record<string, unknown>).view as Record<string, unknown> | undefined;
+				if (graphState && graphState.state) {
+					const state = graphState.state as Record<string, unknown>;
+					if (state.query && typeof state.query === 'string') {
+						return state.query;
+					}
 				}
 			}
 		} catch (error) {
@@ -98,7 +101,8 @@ export class GraphAnalyzer {
 					nodeSet.add(linkedPath);
 
 					// Get link count (how many times this file links to the target)
-					const linkCount = resolvedLinks[linkedPath] || 1;
+					const linkCountValue = resolvedLinks[linkedPath];
+					const linkCount = typeof linkCountValue === 'number' ? linkCountValue : 1;
 
 					edges.push({
 						source: filePath,
@@ -130,7 +134,8 @@ export class GraphAnalyzer {
 			console.log(`Extracted ${nodes.length} nodes and ${edges.length} edges`);
 			return { nodes, edges };
 		} catch (error) {
-			new Notice('Error extracting graph data: ' + error);
+			const errorMessage = error instanceof Error ? error.message : String(error);
+			new Notice(`Error extracting graph data: ${errorMessage}`);
 			console.error('Graph extraction error:', error);
 			return null;
 		}
@@ -279,7 +284,8 @@ export class GraphAnalyzer {
 			await this.plugin.app.vault.create(filename, content);
 			new Notice(`Results exported to ${filename}`);
 		} catch (error) {
-			new Notice('Error exporting results: ' + error);
+			const errorMessage = error instanceof Error ? error.message : String(error);
+			new Notice(`Error exporting results: ${errorMessage}`);
 		}
 	}
 }
