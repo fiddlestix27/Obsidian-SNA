@@ -21,38 +21,47 @@ export default class SNAPlugin extends Plugin {
 		// Add commands
 		this.addCommand({
 			id: 'open-sna-view',
-			name: 'Open Social Network Analysis',
-			callback: () => this.activateSNAView(),
+			name: 'Open',
+			callback: () => {
+				void this.activateSNAView();
+			},
 		});
 
 		this.addCommand({
 			id: 'analyze-graph',
-			name: 'Analyze Current Graph',
-			callback: () => this.graphAnalyzer.analyzeCurrentGraph(),
+			name: 'Analyze Graph',
+			callback: () => {
+				void this.graphAnalyzer.analyzeCurrentGraph();
+			},
 		});
 
 		this.addCommand({
 			id: 'calculate-centrality',
 			name: 'Calculate Centrality Measures',
-			callback: () => this.graphAnalyzer.calculateAllCentrality(),
+			callback: () => {
+				void this.graphAnalyzer.calculateAllCentrality();
+			},
 		});
 
 		this.addCommand({
 			id: 'export-analysis',
-			name: 'Export Analysis Results',
-			callback: () => this.graphAnalyzer.exportResults(),
+			name: 'Export Results',
+			callback: () => {
+				void this.graphAnalyzer.exportResults();
+			},
 		});
 
 		// Add settings tab
 		this.addSettingTab(new SNASettingTab(this.app, this));
 	}
 
-	async onunload() {
+	onunload() {
 		// Cleanup
 	}
 
 	async loadSettings() {
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+		const data = (await this.loadData()) as SNASettings | null;
+		this.settings = Object.assign({}, DEFAULT_SETTINGS, data);
 	}
 
 	async saveSettings() {
@@ -63,7 +72,7 @@ export default class SNAPlugin extends Plugin {
 		const { workspace } = this.app;
 		let leaf = workspace.getLeavesOfType(VIEW_TYPE_SNA).length > 0
 			? workspace.getLeavesOfType(VIEW_TYPE_SNA)[0]
-			: workspace.getUnpinnedLeaf();
+			: workspace.getLeaf(false);
 
 		await leaf.setViewState({
 			type: VIEW_TYPE_SNA,
@@ -85,7 +94,9 @@ class SNASettingTab extends PluginSettingTab {
 		const { containerEl } = this;
 		containerEl.empty();
 
-		containerEl.createEl('h2', { text: 'Social Network Analysis Settings' });
+		new Setting(containerEl)
+			.setName('Configuration')
+			.setHeading();
 
 		new Setting(containerEl)
 			.setName('Enable Directional Analysis')
@@ -132,8 +143,8 @@ class SNASettingTab extends PluginSettingTab {
 					.addOption('hierarchical', 'Hierarchical')
 					.addOption('circular', 'Circular')
 					.setValue(this.plugin.settings.layoutAlgorithm)
-					.onChange(async (value) => {
-						this.plugin.settings.layoutAlgorithm = value as any;
+					.onChange(async (value: string) => {
+						this.plugin.settings.layoutAlgorithm = value as 'force-directed' | 'hierarchical' | 'circular';
 						await this.plugin.saveSettings();
 					})
 			);
@@ -145,7 +156,6 @@ class SNASettingTab extends PluginSettingTab {
 				slider
 					.setLimits(1, 10, 1)
 					.setValue(this.plugin.settings.minLinkWeight)
-					.setDynamicTooltip()
 					.onChange(async (value) => {
 						this.plugin.settings.minLinkWeight = value;
 						await this.plugin.saveSettings();
@@ -164,7 +174,9 @@ class SNASettingTab extends PluginSettingTab {
 					})
 			);
 
-		containerEl.createEl('h3', { text: 'Individual Metrics' });
+		new Setting(containerEl)
+			.setName('Metrics')
+			.setHeading();
 
 		new Setting(containerEl)
 			.setName('Enable Closeness Centrality')
