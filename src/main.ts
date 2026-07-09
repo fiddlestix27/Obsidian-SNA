@@ -95,7 +95,7 @@ class SNASettingTab extends PluginSettingTab {
 		containerEl.empty();
 
 		new Setting(containerEl)
-			.setName('Plugin Options')
+			.setName('Configuration')
 			.setHeading();
 
 		new Setting(containerEl)
