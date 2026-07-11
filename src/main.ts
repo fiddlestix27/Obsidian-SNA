@@ -78,7 +78,7 @@ export default class SNAPlugin extends Plugin {
 			type: VIEW_TYPE_SNA,
 		});
 
-		workspace.revealLeaf(leaf);
+		void workspace.revealLeaf(leaf);
 	}
 }
 
