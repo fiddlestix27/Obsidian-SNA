@@ -125,7 +125,7 @@ Measures how much neighbors of a node are connected. High clustering indicates t
 
 ## System Requirements
 
-- Obsidian 0.15.0 or higher
+- Obsidian 1.7.2 or higher
 - Node.js 14+ (for development/building from source)
 - npm (for development/building from source)
 
