@@ -1,7 +1,7 @@
 import esbuild from "esbuild";
 import process from "process";
 import path from "path";
-import builtins from "builtin-modules";
+import { builtinModules } from "node:module";
 
 const prod = process.argv[2] === "production";
 
@@ -33,7 +33,7 @@ const ctx = await esbuild.context({
   external: [
     "obsidian",
     "electron",
-    ...builtins,
+    ...builtinModules,
   ],
 
   platform: "browser",
