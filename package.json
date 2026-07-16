@@ -7,7 +7,7 @@
     "dev": "node esbuild.config.mjs",
     "build": "node esbuild.config.mjs production",
     "check": "tsc --noEmit",
-    "lint": "eslint src --ext .ts",
+    "lint": "eslint .",
     "format": "prettier --write .",
     "clean": "rimraf dist main.js"
   },
@@ -20,14 +20,17 @@
   "author": "fiddlestix27",
   "license": "GPL-3.0-only",
   "devDependencies": {
-    "@types/node": "24.18.0",
-    "@typescript-eslint/eslint-plugin": "9.39.5",
-    "@typescript-eslint/parser": "9.39.5",
+    "@eslint/js": "^9.39.5",
+    "@types/node": "^24",
     "esbuild": "^0.28.1",
-    "obsidian": "latest",
-    "tslib": "2.8.1",
-    "typescript": "5.9.0",
     "eslint": "^9.39.5",
-    "@eslint/js": "^9.39.5"
-  }
+    "globals": "^16",
+    "obsidian": "latest",
+    "prettier": "^3",
+    "rimraf": "^6",
+    "tslib": "^2.8.1",
+    "typescript": "^5.9",
+    "typescript-eslint": "^8"
 }
+    
+  }
