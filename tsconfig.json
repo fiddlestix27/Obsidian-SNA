@@ -22,7 +22,6 @@
 
     "forceConsistentCasingInFileNames": true,
     "useDefineForClassFields": true,
-    "verbatimModuleSyntax": true,
 
     "types": [
       "node"
