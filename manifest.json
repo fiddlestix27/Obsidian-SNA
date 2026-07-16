@@ -1,7 +1,7 @@
 {
   "id": "social-network-analysis",
   "name": "Social Network Analysis",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "minAppVersion": "1.7.2",
   "description": "Performs comprehensive social network analysis on your graph view, including various centrality measures, directional analysis, and graph layout customization.",
   "author": "fiddlestix27",
