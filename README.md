@@ -6,10 +6,9 @@ Obsidian plugin for analyzing the social networks within your knowledge base usi
 
 - **Multiple Centrality Measures**: Degree, Betweenness, Eigenvector, Closeness, PageRank, and Harmonic centrality
 - **Clustering Analysis**: Calculate clustering coefficients to identify communities
-- **Layout Algorithms**: Force-directed, hierarchical, and circular graph layouts (**this is currently not working, but will be updated in the future**)
 - **Weighted Links**: Optional link weighting based on mention frequency
 - **Directional Analysis**: Analyze backlink direction in your graph
-- **Auto-Export**: Automatically export analysis results to markdown files
+- **Auto-Export**: Automatically export analysis results to markdown files **(currently broken)**
 - **Interactive UI**: View results in a dedicated panel with sortable metrics
 
 ## Quick Start (Users)
@@ -90,7 +89,7 @@ The recompiled `main.js` will be generated automatically.
 - **Enable Clustering**: Calculate clustering coefficients (default: ON)
 - **Layout Algorithm**: Choose from force-directed, hierarchical, or circular (default: force-directed)
 - **Minimum Link Weight**: Filter links below this threshold (default: 1)
-- **Auto-Export Results**: Automatically save results after analysis (default: OFF) - this feature is currently broken
+- **Auto-Export Results**: Automatically save results after analysis (default: OFF) - **currently broken**
 
 ### Individual Metrics
 Toggle individual centrality measures on/off:
@@ -184,3 +183,4 @@ For issues, feature requests, or questions:
    - layout customization
    - narrow by path or grouping (adjust SNA calculations by current view)
    - left vs right eigenvector specifications when directional analysis is enabled
+   - fix auto export
