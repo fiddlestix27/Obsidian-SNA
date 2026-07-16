@@ -67,7 +67,7 @@ The recompiled `main.js` will be generated automatically.
 ## Usage
 
 ### Opening the Plugin
-- Use the command palette (`Cmd/Ctrl + P`) and search for "Open Social Network Analysis"
+- Use the command palette (`Cmd/Ctrl + P`) and search for "Social Network Analysis"
 - Or use the sidebar icon
 
 ### Analyzing Your Graph
@@ -77,10 +77,10 @@ The recompiled `main.js` will be generated automatically.
 4. Export results with the "Export Results" button
 
 ### Available Commands
-- **Open Social Network Analysis**: Open the SNA panel
-- **Analyze Current Graph**: Run analysis on your current graph
+- **Open**: Open the SNA panel
+- **Analyze Graph**: Run analysis on your current graph
 - **Calculate Centrality Measures**: Compute all centrality metrics
-- **Export Analysis Results**: Save results to a markdown file
+- **Export Results**: Save results to a markdown file
 
 ## Settings
 
@@ -90,7 +90,7 @@ The recompiled `main.js` will be generated automatically.
 - **Enable Clustering**: Calculate clustering coefficients (default: ON)
 - **Layout Algorithm**: Choose from force-directed, hierarchical, or circular (default: force-directed)
 - **Minimum Link Weight**: Filter links below this threshold (default: 1)
-- **Auto-Export Results**: Automatically save results after analysis (default: OFF)
+- **Auto-Export Results**: Automatically save results after analysis (default: OFF) - this feature is currently broken
 
 ### Individual Metrics
 Toggle individual centrality measures on/off:
@@ -126,7 +126,7 @@ Measures how much neighbors of a node are connected. High clustering indicates t
 ## System Requirements
 
 - Obsidian 1.7.2 or higher
-- Node.js 14+ (for development/building from source)
+- Node.js 24+ (for development/building from source)
 - npm (for development/building from source)
 
 ## Performance
@@ -176,3 +176,11 @@ For issues, feature requests, or questions:
 - Interactive UI panel
 - Settings and customization
 - Auto-export functionality
+
+### v1.1.0
+- Updated dependencies to latest stable releases
+- Added eslint.config.mjs for cleaner linting
+- Awaited updates:
+   - layout customization
+   - narrow by path or grouping (adjust SNA calculations by current view)
+   - left vs right eigenvector specifications when directional analysis is enabled
