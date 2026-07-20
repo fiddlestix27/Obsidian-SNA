@@ -77,8 +77,8 @@ export class SNACalculator {
 
 		// Default normalization options: normalize metrics that are typically normalized in industry standards
 		const options: NormalizationOptions = {
-			degreeCentrality: normalizationOptions?.degreeCentrality ?? true,
-			betweennessCentrality: normalizationOptions?.betweennessCentrality ?? false,
+			degreeCentrality: normalizationOptions?.degreeCentrality ?? false,
+			betweennessCentrality: normalizationOptions?.betweennessCentrality ?? true,
 			eigenvectorCentrality: normalizationOptions?.eigenvectorCentrality ?? false,
 			closenessCentrality: normalizationOptions?.closenessCentrality ?? true,
 			pageRank: normalizationOptions?.pageRank ?? false,
